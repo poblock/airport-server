@@ -6,7 +6,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Flights {
+	final static Logger logger = LoggerFactory.getLogger(Flights.class);
 	static List<Lot> arrivalsArray = Collections.synchronizedList(new ArrayList<Lot>());
 	static List<Lot> departuresArray = Collections.synchronizedList(new ArrayList<Lot>());
 
@@ -14,12 +18,10 @@ public class Flights {
 		if (arrivals != null) {
 			System.out.println("Compare Arrivals");
 			compareLists(arrivals, arrivalsArray);
-			arrivalsArray = arrivals;
 		}
 		if (departures != null) {
 			System.out.println("Compare Departures");
 			compareLists(departures, departuresArray);
-			departuresArray = departures;
 		}
 	}
 
@@ -56,16 +58,19 @@ public class Flights {
 				}
 			}
 			long stop = System.currentTimeMillis();
+			long result = stop-start;
+			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
 			// Server.broadcastMessage("Serwer", currentList.toString());
-			System.out.println(wyniki);
+			logger.info(wyniki.toString());
 		}
 		return wyniki;
 	}
 	
 	private static Lot getFlight(Lot lot, List<Lot> list) {
 		for(Lot l : list) {
-			if(l.getAirport().equals(lot.getAirport()) && 
-					l.getFlight().equals(lot.getFlight())) {
+			if(l.getAirport().equals(lot.getAirport()) 
+					&& l.getFlight().equals(lot.getFlight()) 
+					&& l.isBiezacyDzien()==lot.isBiezacyDzien()) {
 				return l;
 			}
 		}

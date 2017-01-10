@@ -7,7 +7,8 @@ public class Lot {
 	private String time;
 	private String timeExp;
 	private String status;
-
+	private boolean biezacyDzien;
+	
 	public Lot() {
 
 	}
@@ -60,10 +61,18 @@ public class Lot {
 		this.status = status;
 	}
 
+	public boolean isBiezacyDzien() {
+		return biezacyDzien;
+	}
+
+	public void setBiezacyDzien(boolean biezacyDzien) {
+		this.biezacyDzien = biezacyDzien;
+	}
+
 	@Override
 	public String toString() {
 		return "Lot [airport=" + airport + ", flight=" + flight + ", airline=" + airline + ", time=" + time
-				+ ", timeExp=" + timeExp + ", status=" + status + "]";
+				+ ", timeExp=" + timeExp + ", status=" + status + ", biezacyDzien=" + biezacyDzien + "]";
 	}
 
 	@Override
@@ -72,6 +81,7 @@ public class Lot {
 		int result = 1;
 		result = prime * result + ((airline == null) ? 0 : airline.hashCode());
 		result = prime * result + ((airport == null) ? 0 : airport.hashCode());
+		result = prime * result + (biezacyDzien ? 1231 : 1237);
 		result = prime * result + ((flight == null) ? 0 : flight.hashCode());
 		result = prime * result + ((status == null) ? 0 : status.hashCode());
 		result = prime * result + ((time == null) ? 0 : time.hashCode());
@@ -97,6 +107,8 @@ public class Lot {
 			if (other.airport != null)
 				return false;
 		} else if (!airport.equals(other.airport))
+			return false;
+		if (biezacyDzien != other.biezacyDzien)
 			return false;
 		if (flight == null) {
 			if (other.flight != null)

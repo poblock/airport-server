@@ -1,5 +1,9 @@
 package pl.airport;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -9,99 +13,69 @@ import java.util.ListIterator;
 import java.util.TimeZone;
 
 import org.joda.time.LocalDateTime;
+import org.json.JSONArray;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Parser {
 	
+	final Logger logger = LoggerFactory.getLogger(Parser.class);
 	private LocalDateTime arrivalsLastTime = null;
 	private LocalDateTime departuresLastTime = null;
 	public static final int ARRIVALS = 0;
 	public static final int DEPARTURES = 1;
 	private HashMap<String,String> airportCodes;
+	private String updatedText = "Updated:";
 	
 	public Parser() {
-		airportCodes = new HashMap<>();
-		airportCodes.put("ABERDEEN","ABZ");
-		airportCodes.put("ALESUND","AES");
-		airportCodes.put("ALICANTE","ALC");
-		airportCodes.put("AMSTERDAM","AMS");
-		airportCodes.put("BARCELONA","BCN");
-		airportCodes.put("BELFAST","BFS");
-		airportCodes.put("BERGEN","BGO");
-		airportCodes.put("BILLUND","BLL");
-		airportCodes.put("BIRMINGHAM","BHX");
-		airportCodes.put("BRISTOL","BRS");
-		airportCodes.put("BRUKSELA CHARLEROI","CRL");
-		airportCodes.put("CORK","ORK");
-		airportCodes.put("DONCASTER SHEFFIELD","DSA");
-		airportCodes.put("DORTMUND","DTM");
-		airportCodes.put("DUBLIN","DUB");
-		airportCodes.put("EDYNBURG","EDI");
-		airportCodes.put("EINDHOVEN","EIN");
-		airportCodes.put("FRANKFURT","FRA");
-		airportCodes.put("FRANKFURT HAHN","HHN");
-		airportCodes.put("GLASGOW","GLA");
-		airportCodes.put("GOTEBORG","GSE");
-		airportCodes.put("GRENOBLE","GNB");
-		airportCodes.put("GRONINGEN","GRQ");
-		airportCodes.put("HAMBURG","HAM");
-		airportCodes.put("HAUGESUND","HAU");
-		airportCodes.put("HELSINKI","HEL");
-		airportCodes.put("KIJÓW ¯ULANY","IEV");
-		airportCodes.put("KOLONIA BONN","CGN");
-		airportCodes.put("KOPENHAGA","CPH");
-		airportCodes.put("KRAKÓW","KRK");
-		airportCodes.put("KRISTIANSAND","KRS");
-		airportCodes.put("LEEDS","LBA");
-		airportCodes.put("LIVERPOOL","LPL");
-		airportCodes.put("LONDYN LUTON","LTN");
-		airportCodes.put("LONDYN STANSTED","STN");
-		airportCodes.put("MALMÖ","MMX");
-		airportCodes.put("MALTA","MLA");
-		airportCodes.put("MANCHESTER","MAN");
-		airportCodes.put("MEDIOLAN","BGY");
-		airportCodes.put("MOLDE","MOL");
-		airportCodes.put("MONACHIUM","MUC");
-		airportCodes.put("NEAPOL","NAP");
-		airportCodes.put("NEWCASTLE","NCL");
-		airportCodes.put("OSLO","OSL");
-		airportCodes.put("OSLO TORP","TRF");
-		airportCodes.put("OSLO RYGGE","RYG");
-		airportCodes.put("PARY¯ BEAUVAIS","BVA");
-		airportCodes.put("PIZA","PSA");
-		airportCodes.put("RADOM","RDO");
-		airportCodes.put("REYKJAVÍK","KEF");
-		airportCodes.put("STAVANGER","SVG");
-		airportCodes.put("SZTOKHOLM ARLANDA","ARN");
-		airportCodes.put("SZTOKHOLM SKAVSTA","NYO");
-		airportCodes.put("TRONDHEIM","TRD");
-		airportCodes.put("TURKU","TKU");
-		airportCodes.put("VAXJO","VXO");
-		airportCodes.put("WARSZAWA","WAW");
+		loadAirports();
 	}
 	
-	public static void main(String[] args) {
-		try {
-			Parser parser = new Parser();
-			parser.parse("http://www.airport.gdansk.pl/schedule/arrivals-table", ARRIVALS);
-			parser.parse("http://www.airport.gdansk.pl/schedule/departures-table", DEPARTURES);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	private void loadAirports() {
+		URL url = Parser.class.getClassLoader().getResource("airports.txt");
+        InputStream is = null;
+        BufferedReader br = null;
+        try {
+        	is = url.openStream();
+            br = new BufferedReader(new InputStreamReader(is,"UTF-8"));
+            StringBuilder mock19 = new StringBuilder();
+            String line;
+            while((line = br.readLine()) != null) {
+            	mock19.append(line);
+            }
+            JSONArray arr = new JSONArray(mock19.toString()); 
+            airportCodes = new HashMap<>();
+            for(int i=0; i<arr.length(); i++) {
+            	JSONArray airport = arr.getJSONArray(i);
+            	String name = airport.getString(0);
+            	String code = airport.getString(1);
+            	airportCodes.put(name,code);
+            }
+            if(br!=null) br.close();
+            if(is!=null) is.close();
+        } catch(Exception e) {
+        	logger.error("Error at loading airport list file : "+e.getMessage());
+        }
+        
+        if(airportCodes!=null) {
+        	logger.info("Loaded airports : "+airportCodes.toString());
+        }
 	}
 	
 	private boolean isDataRefreshed(String info, int table) throws ParseException {
 		if(info!=null) {
-			System.out.println(info);
-			String search = "Aktualizacja:";
-			int index = info.indexOf(search);
+			logger.info("INFO :"+info);
+			int index = info.indexOf(updatedText);
+			
 			if(index!=-1) {
 				int startIdxDate = index - 11;
-				int startIdxHour = index+search.length()+1;
+				int startIdxHour = index+updatedText.length()+1;
+				
 				String data = info.substring(startIdxDate, index).trim();
 				String godzina = info.substring(startIdxHour);
 				if(data!=null && godzina!=null) {
@@ -113,13 +87,13 @@ public class Parser {
 					if(d2!=null) {
 						LocalDateTime czas = LocalDateTime.parse(d2+"T"+godzina);
 						if(czas!=null) {
-							System.out.println("Czas: "+czas.toString());
+							logger.info("Czas: "+czas.toString());
 							switch (table) {
 							case ARRIVALS:
 								if(arrivalsLastTime!=null) System.out.println("Last arrivals: "+arrivalsLastTime.toString());
 								if(arrivalsLastTime==null || (arrivalsLastTime!=null && czas.isAfter(arrivalsLastTime))) {
 									arrivalsLastTime = czas;
-									System.out.println("ARRIVALS UPDATE");
+									logger.info("ARRIVALS UPDATE");
 									return true;
 								} 
 								break;
@@ -127,7 +101,7 @@ public class Parser {
 								if(departuresLastTime!=null) System.out.println("Last departures: "+departuresLastTime.toString());
 								if(departuresLastTime==null || (departuresLastTime!=null && czas.isAfter(departuresLastTime))) {
 									departuresLastTime = czas;
-									System.out.println("DEPARTURES UPDATE");
+									logger.info("DEPARTURES UPDATE");
 									return true;
 								} 
 								break;
@@ -150,6 +124,7 @@ public class Parser {
 					Elements wiersze = lotyTable.select("tr");
 					ListIterator<Element> it = wiersze.listIterator();
 					ArrayList<Lot> flightsArray = new ArrayList<Lot>();
+					boolean nextDay = false;
 					while(it.hasNext()) {
 						Element el = it.next();
 						Elements elementy = el.select("td");
@@ -168,7 +143,7 @@ public class Parser {
 									if(cleanValue!=null) {
 										lot.setFlight(cleanValue);
 									}
-								} else if(klasa.equals("status")) {
+								} else if(klasa.equals("status") || klasa.equals("status red")) {
 									lot.setStatus(value);
 								} else if(klasa.equals("time")) {
 									if(firstTime) {
@@ -177,6 +152,10 @@ public class Parser {
 									} else {
 										lot.setTimeExp(value);
 										firstTime = true;
+									}
+								} else {
+									if(klasa.equals("nextDay")) {
+										nextDay = true;
 									}
 								}
 							} else {
@@ -192,10 +171,11 @@ public class Parser {
 							}
 						}
 						if(lot.getAirport()!=null && lot.getFlight()!=null) {
+							lot.setBiezacyDzien(!nextDay);
 							flightsArray.add(lot);
 						}
 					}
-					System.out.println(flightsArray);
+					logger.info(flightsArray.toString());
 					return flightsArray;
 				}
 			}
@@ -204,16 +184,17 @@ public class Parser {
 	}
 	
 	private String changeAirportName(String airport) {
-		if(airport.contains(" - ")) {
-			airport = airport.replace(" - ", " ");
-		} else if(airport.contains("-")) {
-			airport = airport.replace("-", " ");
+		String[] unwantedCharacters = {" - ", "-", "\\", "/"};
+		for(String c : unwantedCharacters) {
+			if(airport.contains(c)) {
+				airport = airport.replace(c, " ");
+			}
 		}
 		String kod = airportCodes.get(airport.toUpperCase());
 		if(kod!=null) {
 			return kod;
 		} else {
-			System.out.println("B£¥D!! Nie ma kodu dla "+airport+" "+airport.toUpperCase());
+			logger.warn("ERROR! No code for "+airport+", return: "+airport.toUpperCase());
 		}
 		return airport.toUpperCase();
 	}
