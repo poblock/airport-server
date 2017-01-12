@@ -8,10 +8,12 @@ public class Scheduler extends Timer {
 	private Parser parser = null;
 	private String arrivalsURL;
 	private String departuresURL;
+	private Flights flights = null;
 	
 	public Scheduler() {
 		super(true);
 		parser = new Parser();
+		flights = new Flights();
 		arrivalsURL = "http://www.airport.gdansk.pl/en/schedule/arrivals-table";
 		departuresURL = "http://www.airport.gdansk.pl/en/schedule/departures-table";
 		scheduleAtFixedRate(new Task(), 0, 60*1000);
@@ -22,9 +24,9 @@ public class Scheduler extends Timer {
 		@Override
 		public void run() {
 			try {
-				List<Lot> przyloty = parser.parse(arrivalsURL, Parser.ARRIVALS);
-				List<Lot> odloty = parser.parse(departuresURL, Parser.DEPARTURES);
-				Flights.checkFlights(przyloty, odloty);
+				List<Lot> przyloty = parser.parse(arrivalsURL, Flights.ARRIVALS);
+				List<Lot> odloty = parser.parse(departuresURL, Flights.DEPARTURES);
+				flights.checkFlights(przyloty, odloty);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

@@ -25,10 +25,6 @@ import org.slf4j.LoggerFactory;
 public class Parser {
 	
 	final Logger logger = LoggerFactory.getLogger(Parser.class);
-	private LocalDateTime arrivalsLastTime = null;
-	private LocalDateTime departuresLastTime = null;
-	public static final int ARRIVALS = 0;
-	public static final int DEPARTURES = 1;
 	private HashMap<String,String> airportCodes;
 	private String updatedText = "Updated:";
 	
@@ -69,7 +65,7 @@ public class Parser {
 	
 	private boolean isDataRefreshed(String info, int table) throws ParseException {
 		if(info!=null) {
-			logger.info("INFO :"+info);
+			logger.info("INFO FROM PAGE : "+info);
 			int index = info.indexOf(updatedText);
 			
 			if(index!=-1) {
@@ -87,20 +83,20 @@ public class Parser {
 					if(d2!=null) {
 						LocalDateTime czas = LocalDateTime.parse(d2+"T"+godzina);
 						if(czas!=null) {
-							logger.info("Czas: "+czas.toString());
+							logger.info("PAGE TIME : "+czas.toString());
 							switch (table) {
-							case ARRIVALS:
-								if(arrivalsLastTime!=null) System.out.println("Last arrivals: "+arrivalsLastTime.toString());
-								if(arrivalsLastTime==null || (arrivalsLastTime!=null && czas.isAfter(arrivalsLastTime))) {
-									arrivalsLastTime = czas;
+							case Flights.ARRIVALS:
+								if(Flights.arrivalsLastTime!=null) logger.info("Last arrivals time : "+Flights.arrivalsLastTime.toString());
+								if(Flights.arrivalsLastTime==null || (Flights.arrivalsLastTime!=null && czas.isAfter(Flights.arrivalsLastTime))) {
+									Flights.arrivalsLastTime = czas;
 									logger.info("ARRIVALS UPDATE");
 									return true;
 								} 
 								break;
-							case DEPARTURES:
-								if(departuresLastTime!=null) System.out.println("Last departures: "+departuresLastTime.toString());
-								if(departuresLastTime==null || (departuresLastTime!=null && czas.isAfter(departuresLastTime))) {
-									departuresLastTime = czas;
+							case Flights.DEPARTURES:
+								if(Flights.departuresLastTime!=null) logger.info("Last departures time : "+Flights.departuresLastTime.toString());
+								if(Flights.departuresLastTime==null || (Flights.departuresLastTime!=null && czas.isAfter(Flights.departuresLastTime))) {
+									Flights.departuresLastTime = czas;
 									logger.info("DEPARTURES UPDATE");
 									return true;
 								} 
@@ -206,6 +202,8 @@ public class Parser {
 			airline = "LOT";
 		} else if(airline.equals("SAS Scandinavian Airlines")) {
 			airline = "SAS";
+		} else if(airline.equals("Norwegian Air Shuttle ASA")) {
+			airline = "Norwegian";
 		}
 		return airline;
 	}

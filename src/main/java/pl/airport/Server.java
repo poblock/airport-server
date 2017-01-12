@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.json.JSONObject;
+
 public class Server {
 	// this map is shared between sessions and threads, so it needs to be thread-safe (http://stackoverflow.com/a/2688817)
     static Map<Session, String> userUsernameMap = new ConcurrentHashMap<>();
@@ -28,7 +29,18 @@ public class Server {
         init();
         scheduler = new Scheduler();
     }
-
+    
+    public static void welcomeUser(Session user) {
+    	try {
+        	user.getRemote().sendString(String.valueOf(new JSONObject()
+                    .put("userMessage", createHtmlMessageFromSender("Server-welcome", Flights.getAllFlights()))
+                    .put("userlist", userUsernameMap.values())
+            ));
+    	} catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
     //Sends a message from one user to all users, along with a list of current usernames
     public static void broadcastMessage(String sender, String message) {
         userUsernameMap.keySet().stream().filter(Session::isOpen).forEach(session -> {

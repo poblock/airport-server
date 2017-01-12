@@ -13,6 +13,17 @@ public class Lot {
 
 	}
 
+	public Lot(String airport, String flight, String airline, String time, String timeExp, String status,
+			boolean biezacyDzien) {
+		this.airport = airport;
+		this.flight = flight;
+		this.airline = airline;
+		this.time = time;
+		this.timeExp = timeExp;
+		this.status = status;
+		this.biezacyDzien = biezacyDzien;
+	}
+
 	public String getAirport() {
 		return airport;
 	}
@@ -67,6 +78,14 @@ public class Lot {
 
 	public void setBiezacyDzien(boolean biezacyDzien) {
 		this.biezacyDzien = biezacyDzien;
+	}
+	
+	public String getID() {
+		return getAirport()+";"+getFlight()+";"+isBiezacyDzien();
+	}
+	
+	public String getEncodedString() {
+		return getID()+";"+getAirline()+";"+getTime()+";"+getTimeExp().trim()+";"+getStatus().trim();
 	}
 
 	@Override
@@ -132,5 +151,4 @@ public class Lot {
 			return false;
 		return true;
 	}
-	
 }

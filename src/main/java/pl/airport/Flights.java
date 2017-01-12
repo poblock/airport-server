@@ -6,74 +6,192 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Flights {
 	final static Logger logger = LoggerFactory.getLogger(Flights.class);
-	static List<Lot> arrivalsArray = Collections.synchronizedList(new ArrayList<Lot>());
-	static List<Lot> departuresArray = Collections.synchronizedList(new ArrayList<Lot>());
-
-	public static void checkFlights(List<Lot> arrivals, List<Lot> departures) {
-		if (arrivals != null) {
-			System.out.println("Compare Arrivals");
-			compareLists(arrivals, arrivalsArray);
+	private static List<Lot> arrivalsArray = Collections.synchronizedList(new ArrayList<Lot>());
+	private static List<Lot> departuresArray = Collections.synchronizedList(new ArrayList<Lot>());
+	public static LocalDateTime arrivalsLastTime = null;
+	public static LocalDateTime departuresLastTime = null;
+	public static final int ARRIVALS = 0;
+	public static final int DEPARTURES = 1;
+	
+	public static final char UPDATE = 'U';
+	public static final char NEW = 'N';
+	public static final char REMOVED = 'R';
+	public static final char SAME = 'S';
+	private static final char END = '|';
+	
+	public static String getAllFlights() {
+		String message = "";
+		if(arrivalsLastTime!=null) {
+			message+="T;"+arrivalsLastTime.toString()+END;
 		}
-		if (departures != null) {
-			System.out.println("Compare Departures");
-			compareLists(departures, departuresArray);
+		synchronized(arrivalsArray) {
+			for(Lot lot : arrivalsArray) {
+				message += "A;N;"+lot.getEncodedString()+END;
+			}
 		}
-	}
-
-	public static HashMap<String, Lot> compareLists(List<Lot> currentList, List<Lot> lastList) {
-		HashMap<String, Lot> wyniki = new HashMap<>();
-		if(currentList!=null && !currentList.isEmpty() &&
-				lastList!=null && !lastList.isEmpty()) {
-			long start = System.currentTimeMillis();
-			HashMap<Lot, Boolean> used = new HashMap<>();
-			for(Lot lot : lastList) {
-				used.put(lot, false);
-			}
-			System.out.println("Current : "+currentList);
-			System.out.println("Last : "+lastList);
-			for(Lot curr : currentList) {
-				Lot result = getFlight(curr, lastList);
-				if(result!=null) {
-					if(!result.equals(curr)) {
-						wyniki.put("UPDATE", curr);
-					} else {
-						wyniki.put("BEZ ZMIAN", curr);
-					}
-					used.put(curr, true);
-				} else {
-					wyniki.put("NOWY", curr);
-				}
-			}
-			
-			Iterator<Lot> it = used.keySet().iterator();
-			while(it.hasNext()) {
-				Lot lot = it.next();
-				if(!used.get(lot)) {
-					wyniki.put("REMOVED", lot);
-				}
-			}
-			long stop = System.currentTimeMillis();
-			long result = stop-start;
-			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
-			// Server.broadcastMessage("Serwer", currentList.toString());
-			logger.info(wyniki.toString());
+		if(departuresLastTime!=null) {
+			message+="T;"+departuresLastTime.toString()+END;
 		}
-		return wyniki;
+		synchronized(departuresArray) {
+			for(Lot lot : departuresArray) {
+				message += "D;N;"+lot.getEncodedString()+END;
+			}
+		}
+		logger.info("ALL FLIGHTS LENGTH : "+message.length());
+		return message;
 	}
 	
-	private static Lot getFlight(Lot lot, List<Lot> list) {
-		for(Lot l : list) {
-			if(l.getAirport().equals(lot.getAirport()) 
-					&& l.getFlight().equals(lot.getFlight()) 
-					&& l.isBiezacyDzien()==lot.isBiezacyDzien()) {
-				return l;
+	private Lot getArrival(String ID) {
+		synchronized(arrivalsArray) {
+			for(Lot lot : arrivalsArray) {
+				if(lot.getID().equals(ID)) {
+					return lot;
+				}
 			}
 		}
 		return null;
+	}
+	
+	private Lot getDeparture(String ID) {
+		synchronized(departuresArray) {
+			for(Lot lot : departuresArray) {
+				if(lot.getID().equals(ID)) {
+					return lot;
+				}
+			}
+		}
+		return null;
+	}
+	
+	public synchronized void checkFlights(List<Lot> arrivals, List<Lot> departures) {
+		if (arrivals != null && !arrivals.isEmpty()) {
+			compareArrivals(arrivals);
+		}
+		if (departures != null && !departures.isEmpty()) {
+			compareDepartures(departures);
+		}
+	}
+	
+	public void compareArrivals(List<Lot> currentList) {
+		if(!arrivalsArray.isEmpty()) {
+			logger.info("Last arrivals : "+arrivalsArray);
+			logger.info("Current arrivals : "+currentList);
+			
+			long start = System.currentTimeMillis();
+			HashMap<String, Boolean> used = new HashMap<>();
+			synchronized(arrivalsArray) {
+				for(Lot lot : arrivalsArray) {
+					used.put(lot.getID(), false);
+				}
+			}
+
+			HashMap<Character, ArrayList<Lot>> wyniki = new HashMap<>();
+			wyniki.put(UPDATE, new ArrayList<Lot>());
+			wyniki.put(SAME, new ArrayList<Lot>());
+			wyniki.put(NEW, new ArrayList<Lot>());
+			wyniki.put(REMOVED, new ArrayList<Lot>());
+			
+			for(Lot curr : currentList) {
+				Lot result = getArrival(curr.getID());
+				if(result!=null) {
+					if(!result.equals(curr)) {
+						wyniki.get(UPDATE).add(curr);
+					} else {
+						wyniki.get(SAME).add(curr);
+					}
+					used.put(curr.getID(), true);
+				} else {
+					wyniki.get(NEW).add(curr);
+				}
+			}
+			
+			logger.info("Used : "+used.toString());
+			Iterator<String> it = used.keySet().iterator();
+			while(it.hasNext()) {
+				String lotID = it.next();
+				if(!used.get(lotID)) {
+					Lot lot = getArrival(lotID);
+					if(lot!=null) {
+						wyniki.get(REMOVED).add(lot);
+					}
+				}
+			}
+			long result = System.currentTimeMillis() - start;
+			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
+			logger.info(wyniki.toString());	
+			
+			wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).forEach(entry -> {
+				for(Lot lot : entry.getValue()) {
+					logger.info(entry.getKey()+";"+lot.getEncodedString());
+					Server.broadcastMessage("Serwer "+entry.getKey(), "A;"+entry.getKey()+";"+lot.getEncodedString()); 
+				}
+			});
+			arrivalsArray.clear();
+		} 
+		arrivalsArray.addAll(currentList);
+	}
+	
+	public void compareDepartures(List<Lot> currentList) {
+		if(!departuresArray.isEmpty()) {
+			logger.info("Last departures : "+departuresArray);
+			logger.info("Current departures : "+currentList);
+			
+			long start = System.currentTimeMillis();
+			HashMap<String, Boolean> used = new HashMap<>();
+			synchronized(departuresArray) {
+				for(Lot lot : departuresArray) {
+					used.put(lot.getID(), false);
+				}
+			}
+			
+			HashMap<Character, ArrayList<Lot>> wyniki = new HashMap<>();
+			wyniki.put(UPDATE, new ArrayList<Lot>());
+			wyniki.put(SAME, new ArrayList<Lot>());
+			wyniki.put(NEW, new ArrayList<Lot>());
+			wyniki.put(REMOVED, new ArrayList<Lot>());
+			
+			for(Lot curr : currentList) {
+				Lot result = getDeparture(curr.getID());
+				if(result!=null) {
+					if(!result.equals(curr)) {
+						wyniki.get(UPDATE).add(curr);
+					} else {
+						wyniki.get(SAME).add(curr);
+					}
+					used.put(curr.getID(), true);
+				} else {
+					wyniki.get(NEW).add(curr);
+				}
+			}
+			
+			logger.info("Used : "+used.toString());
+			Iterator<String> it = used.keySet().iterator();
+			while(it.hasNext()) {
+				String lotID = it.next();
+				if(!used.get(lotID)) {
+					Lot result = getDeparture(lotID);
+					if(result!=null) {
+						wyniki.get(REMOVED).add(result);
+					}
+				}
+			}
+			long result = System.currentTimeMillis() - start;
+			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
+			logger.info(wyniki.toString());	
+			wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).forEach(entry -> {
+				for(Lot lot : entry.getValue()) {
+					logger.info(entry.getKey()+";"+lot.getEncodedString());
+					Server.broadcastMessage("Serwer "+entry.getKey(), "D;"+entry.getKey()+";"+lot.getEncodedString()); 
+				}
+			});
+			departuresArray.clear();
+		}
+		departuresArray.addAll(currentList);
 	}
 }
