@@ -13,16 +13,13 @@ public class Handler {
     public void onConnect(Session user) throws Exception {
         String username = "User" + Server.nextUserNumber++;
         Server.userUsernameMap.put(user, username);
-        Server.broadcastMessage("Server", username + " joined the chat");
         Server.welcomeUser(user);
     }
 
     @OnWebSocketClose
     public void onClose(Session user, int statusCode, String reason) {
     	logger.info("WEBSOCKET ON CLOSE : "+user+" statusCode: "+statusCode+" reason : "+reason);
-        String username = Server.userUsernameMap.get(user);
         Server.userUsernameMap.remove(user);
-        Server.broadcastMessage("Server", username + " left the chat");
     }
 
     @OnWebSocketMessage
