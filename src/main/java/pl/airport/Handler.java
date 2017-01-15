@@ -14,6 +14,7 @@ public class Handler {
         String username = "User" + Server.nextUserNumber++;
         Server.userUsernameMap.put(user, username);
         Server.welcomeUser(user);
+        logger.info("ONCONNECT USER: "+username);
     }
 
     @OnWebSocketClose
@@ -24,6 +25,6 @@ public class Handler {
 
     @OnWebSocketMessage
     public void onMessage(Session user, String message) {
-    	Server.broadcastMessage(Server.userUsernameMap.get(user), message);
+    	Server.broadcastMessage(message);
     }
 }

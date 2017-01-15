@@ -24,11 +24,7 @@ function sendMessage(message) {
 //Update the chat-panel, and the list of connected users
 function updateChat(msg) {
     var data = JSON.parse(msg.data);
-    insert("chat", data.userMessage);
-    id("userlist").innerHTML = "";
-    data.userlist.forEach(function (user) {
-        insert("userlist", "<li>" + user + "</li>");
-    });
+    insert("chat", "<article><p>"+data.msg+"</p></article>");
 }
 
 //Helper function for inserting HTML as the first child of an element

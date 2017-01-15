@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.function.Consumer;
 
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
@@ -23,7 +26,7 @@ public class Flights {
 	public static final char NEW = 'N';
 	public static final char REMOVED = 'R';
 	public static final char SAME = 'S';
-	private static final char END = '|';
+	public static final char END = '|';
 	
 	public static String getAllFlights() {
 		String message = "";
@@ -126,15 +129,33 @@ public class Flights {
 			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
 			logger.info(wyniki.toString());	
 			
-			wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).forEach(entry -> {
-				for(Lot lot : entry.getValue()) {
-					logger.info(entry.getKey()+";"+lot.getEncodedString());
-					Server.broadcastMessage("Serwer "+entry.getKey(), "A;"+entry.getKey()+";"+lot.getEncodedString()); 
-				}
-			});
+			String message = "";
+			if(arrivalsLastTime!=null) {
+				message+="T;"+arrivalsLastTime.toString()+END;
+			}
+			WynikiConsumer konsument = wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).
+			collect(WynikiConsumer::new, WynikiConsumer::accept, WynikiConsumer::combine);
+			logger.info("CONSUMER : "+konsument.message);
+			Server.broadcastMessage(message);
 			arrivalsArray.clear();
 		} 
 		arrivalsArray.addAll(currentList);
+	}
+	
+	class WynikiConsumer implements Consumer<Entry<Character, ArrayList<Lot>>> {
+		private String message = "";
+		
+		@Override
+		public void accept(Entry<Character, ArrayList<Lot>> entry) {
+			for(Lot lot : entry.getValue()) {
+				logger.info(entry.getKey()+";"+lot.getEncodedString());
+				message += "A;"+entry.getKey()+";"+lot.getEncodedString()+END;	 
+			}
+		}
+		
+		public void combine(WynikiConsumer other) {
+			message += other.message;
+		}
 	}
 	
 	public void compareDepartures(List<Lot> currentList) {
@@ -187,7 +208,12 @@ public class Flights {
 			wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).forEach(entry -> {
 				for(Lot lot : entry.getValue()) {
 					logger.info(entry.getKey()+";"+lot.getEncodedString());
-					Server.broadcastMessage("Serwer "+entry.getKey(), "D;"+entry.getKey()+";"+lot.getEncodedString()); 
+					String message = "";
+					if(departuresLastTime!=null) {
+						message+="T;"+departuresLastTime.toString()+END;
+					}
+					message += "D;"+entry.getKey()+";"+lot.getEncodedString();
+					Server.broadcastMessage(message); 
 				}
 			});
 			departuresArray.clear();
