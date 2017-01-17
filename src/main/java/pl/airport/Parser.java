@@ -65,9 +65,7 @@ public class Parser {
 	
 	private boolean isDataRefreshed(String info, int table) throws ParseException {
 		if(info!=null) {
-			logger.info("INFO FROM PAGE : "+info);
 			int index = info.indexOf(updatedText);
-			
 			if(index!=-1) {
 				int startIdxDate = index - 11;
 				int startIdxHour = index+updatedText.length()+1;
@@ -89,7 +87,7 @@ public class Parser {
 								if(Flights.arrivalsLastTime!=null) logger.info("Last arrivals time : "+Flights.arrivalsLastTime.toString());
 								if(Flights.arrivalsLastTime==null || (Flights.arrivalsLastTime!=null && czas.isAfter(Flights.arrivalsLastTime))) {
 									Flights.arrivalsLastTime = czas;
-									logger.info("ARRIVALS UPDATE");
+									logger.info("\tARRIVALS UPDATE");
 									return true;
 								} 
 								break;
@@ -97,7 +95,7 @@ public class Parser {
 								if(Flights.departuresLastTime!=null) logger.info("Last departures time : "+Flights.departuresLastTime.toString());
 								if(Flights.departuresLastTime==null || (Flights.departuresLastTime!=null && czas.isAfter(Flights.departuresLastTime))) {
 									Flights.departuresLastTime = czas;
-									logger.info("DEPARTURES UPDATE");
+									logger.info("\tDEPARTURES UPDATE");
 									return true;
 								} 
 								break;
@@ -163,6 +161,9 @@ public class Parser {
 											break;
 										}
 									}
+								}
+								if(lot.getAirline()==null) {
+									lot.setAirline(kolumna.text());
 								}
 							}
 						}

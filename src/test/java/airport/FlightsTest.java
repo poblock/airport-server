@@ -3,6 +3,7 @@ package airport;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
@@ -63,13 +64,13 @@ public class FlightsTest {
 		wyniki.get(Flights.REMOVED).add(new Lot("WAW", "LO3835", "LOT", "11:40", "11:34", "LANDED", true));
 	}
 	
-	@Test
-	public void showWyniki() {
-		assertNotNull(wyniki);	
-		WynikiConsumer konsument = wyniki.entrySet().stream().filter(item -> !item.getKey().equals(Flights.SAME)).
-				collect(WynikiConsumer::new, WynikiConsumer::accept, WynikiConsumer::combine);
-		System.out.println(konsument.message);
-	}
+//	@Test
+//	public void showWyniki() {
+//		assertNotNull(wyniki);	
+//		WynikiConsumer konsument = wyniki.entrySet().stream().filter(item -> !item.getKey().equals(Flights.SAME)).
+//				collect(WynikiConsumer::new, WynikiConsumer::accept, WynikiConsumer::combine);
+//		System.out.println(konsument.message);
+//	}
 	
 	class WynikiConsumer implements Consumer<Entry<Character, ArrayList<Lot>>> {
 		private String message = "";
@@ -84,5 +85,28 @@ public class FlightsTest {
 		public void combine(WynikiConsumer other) {
 			message += other.message;
 		}
+	}
+	
+	@Test
+	public void stringConcatenatingInLoop() {
+		long avg1 = 0;
+		long avg2 = 0;
+		
+		for(int j=0; j<100; j++) {
+			long start = System.currentTimeMillis();
+			String msg = "";
+			for(int i=0; i<10_000; i++) {
+				msg += wyniki.get(Flights.REMOVED).get(i%wyniki.get(Flights.REMOVED).size());
+			}
+			avg1 += (System.currentTimeMillis()-start);
+			
+			long start2 = System.currentTimeMillis();
+			StringBuilder msgB = new StringBuilder();
+			for(int i=0; i<10_000; i++) {
+				msgB.append(wyniki.get(Flights.REMOVED).get(i%wyniki.get(Flights.REMOVED).size()));
+			}
+			avg2 += (System.currentTimeMillis()-start2);
+		}
+		System.out.println(avg1/100+" "+avg2/100); // avg1 avg2 : 6074 2
 	}
 }

@@ -29,25 +29,25 @@ public class Flights {
 	public static final char END = '|';
 	
 	public static String getAllFlights() {
-		String message = "";
+		StringBuilder message = new StringBuilder();
 		if(arrivalsLastTime!=null) {
-			message+="T;"+arrivalsLastTime.toString()+END;
+			message.append("T;"+arrivalsLastTime.toString()+END);
 		}
 		synchronized(arrivalsArray) {
 			for(Lot lot : arrivalsArray) {
-				message += "A;N;"+lot.getEncodedString()+END;
+				message.append("A;N;"+lot.getEncodedString()+END);
 			}
 		}
 		if(departuresLastTime!=null) {
-			message+="T;"+departuresLastTime.toString()+END;
+			message.append("T;"+departuresLastTime.toString()+END);
 		}
 		synchronized(departuresArray) {
 			for(Lot lot : departuresArray) {
-				message += "D;N;"+lot.getEncodedString()+END;
+				message.append("D;N;"+lot.getEncodedString()+END);
 			}
 		}
 		logger.info("ALL FLIGHTS LENGTH : "+message.length());
-		return message;
+		return message.toString();
 	}
 	
 	private Lot getArrival(String ID) {
@@ -85,7 +85,6 @@ public class Flights {
 		if(!arrivalsArray.isEmpty()) {
 			logger.info("Last arrivals : "+arrivalsArray);
 			logger.info("Current arrivals : "+currentList);
-			
 			long start = System.currentTimeMillis();
 			HashMap<String, Boolean> used = new HashMap<>();
 			synchronized(arrivalsArray) {
@@ -93,13 +92,11 @@ public class Flights {
 					used.put(lot.getID(), false);
 				}
 			}
-
 			HashMap<Character, ArrayList<Lot>> wyniki = new HashMap<>();
 			wyniki.put(UPDATE, new ArrayList<Lot>());
 			wyniki.put(SAME, new ArrayList<Lot>());
 			wyniki.put(NEW, new ArrayList<Lot>());
 			wyniki.put(REMOVED, new ArrayList<Lot>());
-			
 			for(Lot curr : currentList) {
 				Lot result = getArrival(curr.getID());
 				if(result!=null) {
@@ -113,7 +110,6 @@ public class Flights {
 					wyniki.get(NEW).add(curr);
 				}
 			}
-			
 			logger.info("Used : "+used.toString());
 			Iterator<String> it = used.keySet().iterator();
 			while(it.hasNext()) {
@@ -126,35 +122,67 @@ public class Flights {
 				}
 			}
 			long result = System.currentTimeMillis() - start;
-			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
+			logger.info("Comparing took "+result+" ms");
 			logger.info(wyniki.toString());	
-			
 			String message = "";
 			if(arrivalsLastTime!=null) {
 				message+="T;"+arrivalsLastTime.toString()+END;
 			}
-			WynikiConsumer konsument = wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).
-			collect(WynikiConsumer::new, WynikiConsumer::accept, WynikiConsumer::combine);
-			logger.info("CONSUMER : "+konsument.message);
-			Server.broadcastMessage(message);
+			ArrivalsConsumer konsument = wyniki.entrySet()
+											.stream()
+											.filter(item -> !item.getKey().equals(SAME))
+											.collect(ArrivalsConsumer::new, ArrivalsConsumer::accept, ArrivalsConsumer::combine);
+			logger.info("CONSUMER : "+konsument.message.toString());
+			if(konsument.message!=null && !konsument.message.toString().equals("")) {
+				message+=konsument.message.toString();
+				Server.broadcastMessage(message);
+			}
 			arrivalsArray.clear();
 		} 
 		arrivalsArray.addAll(currentList);
 	}
 	
-	class WynikiConsumer implements Consumer<Entry<Character, ArrayList<Lot>>> {
-		private String message = "";
-		
+	class ArrivalsConsumer implements Consumer<Entry<Character, ArrayList<Lot>>> {
+		private StringBuilder message = new StringBuilder();	
 		@Override
 		public void accept(Entry<Character, ArrayList<Lot>> entry) {
 			for(Lot lot : entry.getValue()) {
 				logger.info(entry.getKey()+";"+lot.getEncodedString());
-				message += "A;"+entry.getKey()+";"+lot.getEncodedString()+END;	 
+				message.append("A;"+entry.getKey()+";"+lot.getEncodedString()+END);	 
 			}
 		}
+		public void combine(ArrivalsConsumer other) {
+			message.append(other.message);
+		}
+	}
+	
+	class K<T> implements Consumer<Entry<Character, ArrayList<Lot>>> {
+
+		private StringBuilder message = new StringBuilder();	
+		@Override
+		public void accept(Entry<Character, ArrayList<Lot>> entry) {
+			for(Lot lot : entry.getValue()) {
+				logger.info(entry.getKey()+";"+lot.getEncodedString());
+				message.append("A;"+entry.getKey()+";"+lot.getEncodedString()+END);	 
+			}
+		}
+		public void combine(K<T> other) {
+			message.append(other.message);
+		}
 		
-		public void combine(WynikiConsumer other) {
-			message += other.message;
+	}
+	
+	class DeparturesConsumer implements Consumer<Entry<Character, ArrayList<Lot>>> {
+		private StringBuilder message = new StringBuilder();	
+		@Override
+		public void accept(Entry<Character, ArrayList<Lot>> entry) {
+			for(Lot lot : entry.getValue()) {
+				logger.info(entry.getKey()+";"+lot.getEncodedString());
+				message.append("D;"+entry.getKey()+";"+lot.getEncodedString()+END);	 
+			}
+		}
+		public void combine(DeparturesConsumer other) {
+			message.append(other.message);
 		}
 	}
 	
@@ -162,7 +190,6 @@ public class Flights {
 		if(!departuresArray.isEmpty()) {
 			logger.info("Last departures : "+departuresArray);
 			logger.info("Current departures : "+currentList);
-			
 			long start = System.currentTimeMillis();
 			HashMap<String, Boolean> used = new HashMap<>();
 			synchronized(departuresArray) {
@@ -170,13 +197,11 @@ public class Flights {
 					used.put(lot.getID(), false);
 				}
 			}
-			
 			HashMap<Character, ArrayList<Lot>> wyniki = new HashMap<>();
 			wyniki.put(UPDATE, new ArrayList<Lot>());
 			wyniki.put(SAME, new ArrayList<Lot>());
 			wyniki.put(NEW, new ArrayList<Lot>());
 			wyniki.put(REMOVED, new ArrayList<Lot>());
-			
 			for(Lot curr : currentList) {
 				Lot result = getDeparture(curr.getID());
 				if(result!=null) {
@@ -190,7 +215,6 @@ public class Flights {
 					wyniki.get(NEW).add(curr);
 				}
 			}
-			
 			logger.info("Used : "+used.toString());
 			Iterator<String> it = used.keySet().iterator();
 			while(it.hasNext()) {
@@ -203,19 +227,22 @@ public class Flights {
 				}
 			}
 			long result = System.currentTimeMillis() - start;
-			logger.info("Comparing took "+result+" ms. Seconds : "+(result/1000));
-			logger.info(wyniki.toString());	
-			wyniki.entrySet().stream().filter(item -> !item.getKey().equals(SAME)).forEach(entry -> {
-				for(Lot lot : entry.getValue()) {
-					logger.info(entry.getKey()+";"+lot.getEncodedString());
-					String message = "";
-					if(departuresLastTime!=null) {
-						message+="T;"+departuresLastTime.toString()+END;
-					}
-					message += "D;"+entry.getKey()+";"+lot.getEncodedString();
-					Server.broadcastMessage(message); 
-				}
-			});
+			logger.info("Comparing took " + result + " ms");
+			logger.info(wyniki.toString());
+
+			String message = "";
+			if (departuresLastTime != null) {
+				message += "T;" + departuresLastTime.toString() + END;
+			}
+			DeparturesConsumer konsument = wyniki.entrySet()
+											.stream()
+											.filter(item -> !item.getKey().equals(SAME))
+											.collect(DeparturesConsumer::new, DeparturesConsumer::accept, DeparturesConsumer::combine);
+			logger.info("CONSUMER : " + konsument.message.toString());
+			if (konsument.message != null && !konsument.message.toString().equals("")) {
+				message += konsument.message.toString();
+				Server.broadcastMessage(message);
+			}
 			departuresArray.clear();
 		}
 		departuresArray.addAll(currentList);
