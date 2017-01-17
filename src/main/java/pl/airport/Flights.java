@@ -156,22 +156,6 @@ public class Flights {
 		}
 	}
 	
-	class K<T> implements Consumer<Entry<Character, ArrayList<Lot>>> {
-
-		private StringBuilder message = new StringBuilder();	
-		@Override
-		public void accept(Entry<Character, ArrayList<Lot>> entry) {
-			for(Lot lot : entry.getValue()) {
-				logger.info(entry.getKey()+";"+lot.getEncodedString());
-				message.append("A;"+entry.getKey()+";"+lot.getEncodedString()+END);	 
-			}
-		}
-		public void combine(K<T> other) {
-			message.append(other.message);
-		}
-		
-	}
-	
 	class DeparturesConsumer implements Consumer<Entry<Character, ArrayList<Lot>>> {
 		private StringBuilder message = new StringBuilder();	
 		@Override
