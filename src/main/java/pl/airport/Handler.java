@@ -25,6 +25,7 @@ public class Handler {
 
     @OnWebSocketMessage
     public void onMessage(Session user, String message) {
-    	Server.broadcastMessage(message);
+    	String u = Server.userUsernameMap.get(user);
+    	logger.info("ONMESSAGE from User : "+u+" "+user);
     }
 }

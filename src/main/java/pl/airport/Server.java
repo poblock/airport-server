@@ -3,6 +3,7 @@ package pl.airport;
 import static spark.Spark.init;
 import static spark.Spark.staticFiles;
 import static spark.Spark.webSocket;
+import static spark.Spark.webSocketIdleTimeoutMillis;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,9 @@ public class Server {
         staticFiles.location("/public"); //index.html is served at localhost:4567 (default port)
         staticFiles.expireTime(600);
         webSocket("/airport", Handler.class);
+        webSocketIdleTimeoutMillis(60*60*1000);
         init();
+        
         scheduler = new Scheduler();
     }
     
