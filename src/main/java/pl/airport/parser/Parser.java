@@ -1,4 +1,4 @@
-package pl.airport;
+package pl.airport.parser;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -21,6 +21,11 @@ import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import pl.airport.flights.Arrivals;
+import pl.airport.flights.Commons;
+import pl.airport.flights.Departures;
+import pl.airport.model.Lot;
 
 public class Parser {
 	
@@ -83,18 +88,18 @@ public class Parser {
 						if(czas!=null) {
 							logger.info("PAGE TIME : "+czas.toString());
 							switch (table) {
-							case Flights.ARRIVALS:
-								if(Flights.arrivalsLastTime!=null) logger.info("Last arrivals time : "+Flights.arrivalsLastTime.toString());
-								if(Flights.arrivalsLastTime==null || (Flights.arrivalsLastTime!=null && czas.isAfter(Flights.arrivalsLastTime))) {
-									Flights.arrivalsLastTime = czas;
+							case Commons.ARRIVALS:
+								if(Arrivals.arrivalsLastTime!=null) logger.info("Last arrivals time : "+Arrivals.arrivalsLastTime.toString());
+								if(Arrivals.arrivalsLastTime==null || (Arrivals.arrivalsLastTime!=null && czas.isAfter(Arrivals.arrivalsLastTime))) {
+									Arrivals.arrivalsLastTime = czas;
 									logger.info("\tARRIVALS UPDATE");
 									return true;
 								} 
 								break;
-							case Flights.DEPARTURES:
-								if(Flights.departuresLastTime!=null) logger.info("Last departures time : "+Flights.departuresLastTime.toString());
-								if(Flights.departuresLastTime==null || (Flights.departuresLastTime!=null && czas.isAfter(Flights.departuresLastTime))) {
-									Flights.departuresLastTime = czas;
+							case Commons.DEPARTURES:
+								if(Departures.departuresLastTime!=null) logger.info("Last departures time : "+Departures.departuresLastTime.toString());
+								if(Departures.departuresLastTime==null || (Departures.departuresLastTime!=null && czas.isAfter(Departures.departuresLastTime))) {
+									Departures.departuresLastTime = czas;
 									logger.info("\tDEPARTURES UPDATE");
 									return true;
 								} 

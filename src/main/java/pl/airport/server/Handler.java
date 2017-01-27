@@ -1,4 +1,4 @@
-package pl.airport;
+package pl.airport.server;
 
 import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.annotations.*;

@@ -1,4 +1,4 @@
-package pl.airport;
+package pl.airport.model;
 
 public class Lot {
 	private String airport;

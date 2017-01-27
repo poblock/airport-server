@@ -1,19 +1,26 @@
-package pl.airport;
+package pl.airport.parser;
 
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import pl.airport.flights.Arrivals;
+import pl.airport.flights.Commons;
+import pl.airport.flights.Departures;
+import pl.airport.model.Lot;
+
 public class Scheduler extends Timer {
 	private Parser parser = null;
 	private String arrivalsURL;
 	private String departuresURL;
-	private Flights flights = null;
+	private Arrivals arrivals = null;
+	private Departures departures = null;
 	
 	public Scheduler() {
 		super(true);
 		parser = new Parser();
-		flights = new Flights();
+		arrivals = new Arrivals();
+		departures = new Departures();
 		arrivalsURL = "http://www.airport.gdansk.pl/en/schedule/arrivals-table";
 		departuresURL = "http://www.airport.gdansk.pl/en/schedule/departures-table";
 		scheduleAtFixedRate(new Task(), 0, 60*1000);
@@ -24,9 +31,10 @@ public class Scheduler extends Timer {
 		@Override
 		public void run() {
 			try {
-				List<Lot> przyloty = parser.parse(arrivalsURL, Flights.ARRIVALS);
-				List<Lot> odloty = parser.parse(departuresURL, Flights.DEPARTURES);
-				flights.checkFlights(przyloty, odloty);
+				List<Lot> przyloty = parser.parse(arrivalsURL, Commons.ARRIVALS);
+				List<Lot> odloty = parser.parse(departuresURL, Commons.DEPARTURES);
+				arrivals.checkArrivals(przyloty);
+				departures.checkDepartures(odloty);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

@@ -1,4 +1,4 @@
-package pl.airport;
+package pl.airport.server;
 
 import static spark.Spark.init;
 import static spark.Spark.staticFiles;
@@ -9,13 +9,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.JSONException;
 import org.json.JSONObject;
+
+import pl.airport.flights.Arrivals;
+import pl.airport.flights.Departures;
+import pl.airport.parser.Scheduler;
 
 public class Server {
 	// this map is shared between sessions and threads, so it needs to be thread-safe (http://stackoverflow.com/a/2688817)
     static Map<Session, String> userUsernameMap = new ConcurrentHashMap<>();
     static int nextUserNumber = 1; //Assign to username for next connecting user
-    static Scheduler scheduler;
    
     public static void main(String[] args) {
         staticFiles.location("/public"); //index.html is served at localhost:4567 (default port)
@@ -24,25 +28,35 @@ public class Server {
         webSocketIdleTimeoutMillis(60*60*1000);
         init();
         
-        scheduler = new Scheduler();
+        Scheduler scheduler = new Scheduler();
     }
     
     public static void welcomeUser(Session user) {
     	try {
-        	user.getRemote().sendString(String.valueOf(new JSONObject().put("msg", Flights.getAllFlights())));
+        	user.getRemote().sendString(prepareWelcomeMessage());
     	} catch (Exception e) {
             e.printStackTrace();
         }
     }
     
-    //Sends a message from one user to all users, along with a list of current usernames
     public static void broadcastMessage(String message) {
         userUsernameMap.keySet().stream().filter(Session::isOpen).forEach(session -> {
             try {
-                session.getRemote().sendString(String.valueOf(new JSONObject().put("msg", message)));
+                session.getRemote().sendString(makeJSONMessage(message));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+    }
+    
+    private static String prepareWelcomeMessage() throws JSONException {
+    	StringBuilder message = new StringBuilder();
+    	Arrivals.appendAllArrivals(message);
+    	Departures.appendAllDepartures(message);
+    	return makeJSONMessage(message.toString());
+    }
+    
+    private static String makeJSONMessage(String message) throws JSONException {
+    	return String.valueOf(new JSONObject().put("msg", message));
     }
 }
